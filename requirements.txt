@@ -4,4 +4,5 @@ numpy
 plotly
 gspread
 google-auth
-numpy
+google-auth-oauthlib
+google-auth-httplib2
