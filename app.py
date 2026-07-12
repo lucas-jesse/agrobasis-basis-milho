@@ -15,7 +15,6 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(
     page_title="AgroBasis | Basis do Milho",
-    page_icon="🌽",
     layout="wide",
 )
 
@@ -65,30 +64,89 @@ MAPA_CIDADES = {
 
 MESES_CONTRATOS = {"F": 1, "H": 3, "K": 5, "N": 7, "U": 9, "X": 11}
 
+# ============================================================
+# CORES OFICIAIS AGROBASIS
+# ============================================================
+# Constantes centralizadas — mesmo Design System dos dashboards USDA
+# Complexo Soja, Milho, Trigo e Spread Milho B3.
+VERDE_PRINCIPAL = "#1E4812"
+VERDE_SECUNDARIO = "#54931B"
+TEXTO = "#222222"
+DOURADO = "#A17149"
+PRETO = "#000000"
+FUNDO = "#F8FAF8"
+BORDA = "#E7ECE8"
+OLIVA = "#6B7F3A"          # verde-oliva da paleta estendida — acento terciário
+MARROM_ESCURO = "#8A6A4F"  # marrom escuro da paleta estendida — escalas divergentes
+
 st.markdown(
-    """
+    f"""
 <style>
-.stApp { background-color: #f4f7fb; color: #0f172a; }
-.block-container { padding-top: 1.1rem; padding-left: 2rem; padding-right: 2rem; max-width: 1500px; }
-.filter-card {
-    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 18px;
-    padding: 16px 18px 6px 18px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] {{
+    font-family:'Geist', Arial, sans-serif;
+}}
+
+.stApp {{ background-color: {FUNDO}; color: {TEXTO}; }}
+.block-container {{ padding-top: 1.1rem; padding-left: 2rem; padding-right: 2rem; max-width: 1500px; }}
+
+h1, h2, h3, h4, h5, h6,
+[data-testid="stMarkdownContainer"],
+[data-testid="stMarkdownContainer"] p,
+label {{
+    color:{TEXTO} !important;
+    font-family:'Geist', Arial, sans-serif;
+}}
+
+.filter-card {{
+    background: #ffffff; border: 1px solid {BORDA}; border-radius: 18px;
+    padding: 16px 18px 6px 18px; box-shadow: 0 8px 24px rgba(30, 72, 18, 0.05);
     margin-bottom: 14px;
-}
-.chart-card {
-    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 18px;
-    padding: 12px 14px 4px 14px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-.small-note { color:#64748b; font-size:12px; margin-top:-4px; }
-.stTabs [data-baseweb="tab-list"] { gap: 8px; border-bottom: 1px solid #dbe4ee; }
-.stTabs [data-baseweb="tab"] {
-    background: #ffffff; border: 1px solid #dbe4ee; border-bottom: none;
-    border-radius: 12px 12px 0 0; padding: 11px 18px; color: #334155; font-weight: 700;
-}
-.stTabs [aria-selected="true"] { background: #14532d; color: white; }
-.stSelectbox label, .stMultiSelect label, .stSlider label, .stRadio label { color: #334155 !important; font-weight: 700; }
-div[data-baseweb="select"] > div { background-color: #ffffff; border-radius: 12px; border-color: #cbd5e1; }
-button[kind="secondary"] { border-radius: 12px; }
+}}
+.chart-card {{
+    background: #ffffff; border: 1px solid {BORDA}; border-radius: 18px;
+    padding: 12px 14px 4px 14px; box-shadow: 0 8px 24px rgba(30, 72, 18, 0.06);
+}}
+.small-note {{ color:#7a7a7a; font-family:'Sora', Arial, sans-serif; font-size:12px; margin-top:-4px; }}
+
+.stTabs [data-baseweb="tab-list"] {{ gap: 8px; border-bottom: 1px solid {BORDA}; }}
+.stTabs [data-baseweb="tab"] {{
+    background: #ffffff; border: 1px solid {BORDA}; border-bottom: none;
+    border-radius: 12px 12px 0 0; padding: 11px 18px; color: #6b6b6b;
+    font-family:'Geist', Arial, sans-serif; font-weight: 700;
+    transition: background .15s ease, color .15s ease;
+}}
+.stTabs [data-baseweb="tab"]:hover {{
+    background: rgba(84,147,27,0.10); color: {VERDE_PRINCIPAL};
+}}
+.stTabs [aria-selected="true"] {{ background: {VERDE_PRINCIPAL} !important; color: white !important; }}
+.stTabs [aria-selected="true"]:hover {{ background: {VERDE_SECUNDARIO} !important; }}
+
+.stSelectbox label, .stMultiSelect label, .stSlider label, .stRadio label {{
+    color: {TEXTO} !important;
+    font-family:'Sora', Arial, sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}}
+div[data-baseweb="select"] > div {{ background-color: #ffffff; border-radius: 12px; border-color: {BORDA}; }}
+
+.stButton > button {{
+    background: #ffffff;
+    color: {VERDE_PRINCIPAL};
+    font-family:'Geist', Arial, sans-serif;
+    border: 1px solid {VERDE_PRINCIPAL};
+    border-radius: 12px;
+    font-weight: 700;
+    transition: background .15s ease, color .15s ease;
+}}
+.stButton > button:hover {{
+    background: {VERDE_SECUNDARIO};
+    color: #ffffff;
+    border-color: {VERDE_SECUNDARIO};
+}}
 </style>
 """,
     unsafe_allow_html=True,
@@ -569,12 +627,12 @@ def grafico_basis(df, cidade, anos, suavizar_atual, suavizar_media):
     ano_base = max(anos)
     fig = go.Figure()
     palette = {
-        ano_base: "#14532d",
-        ano_base - 1: "#2563eb",
-        ano_base - 2: "#f97316",
-        ano_base - 3: "#7c3aed",
-        ano_base - 4: "#0f766e",
-        ano_base - 5: "#64748b",
+        ano_base: VERDE_PRINCIPAL,
+        ano_base - 1: VERDE_SECUNDARIO,
+        ano_base - 2: DOURADO,
+        ano_base - 3: OLIVA,
+        ano_base - 4: MARROM_ESCURO,
+        ano_base - 5: PRETO,
     }
 
     for ano in sorted(anos):
@@ -594,25 +652,25 @@ def grafico_basis(df, cidade, anos, suavizar_atual, suavizar_media):
         fig.add_trace(go.Scatter(
             x=media["DOY"], y=media["Media_5a"], mode="lines",
             name=f"Média {ano_base-5} - {ano_base-1}",
-            line=dict(width=3, dash="dot", color="#d97706"),
+            line=dict(width=3, dash="dot", color=DOURADO),
             hovertemplate="Média 5 anos<br>Dia do ano: %{x}<br>Basis: R$ %{y:.2f}/sc<extra></extra>",
         ))
 
     cortes = [(60, "Mar / K"), (121, "Mai / N"), (182, "Jul / U"), (244, "Set / X"), (305, "Nov / F")]
     for x, label in cortes:
-        fig.add_vline(x=x, line_width=1.2, line_dash="dash", line_color="rgba(15, 23, 42, 0.45)")
-        fig.add_annotation(x=x, y=1.05, yref="paper", text=label, showarrow=False, font=dict(color="#334155", size=11))
+        fig.add_vline(x=x, line_width=1.2, line_dash="dash", line_color="rgba(34, 34, 34, 0.35)")
+        fig.add_annotation(x=x, y=1.05, yref="paper", text=label, showarrow=False, font=dict(color="#6b6b6b", size=11, family="Sora, Arial, sans-serif"))
 
-    fig.add_hline(y=0, line_width=1.1, line_color="rgba(15, 23, 42, 0.45)")
+    fig.add_hline(y=0, line_width=1.1, line_color="rgba(34, 34, 34, 0.35)")
 
     tickvals = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
     ticktext = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
     fig.update_layout(
         template="plotly_white",
-        title={"text": f"{cidade} × B3", "x": 0.5, "xanchor": "center", "y": 0.97, "yanchor": "top", "font": {"size": 19, "color": "#0f172a"}},
+        title={"text": f"{cidade} × B3", "x": 0.5, "xanchor": "center", "y": 0.97, "yanchor": "top", "font": {"size": 19, "color": TEXTO, "family": "Geist, Arial, sans-serif"}},
         height=650,
-        paper_bgcolor="#ffffff", plot_bgcolor="#ffffff", font=dict(color="#0f172a"),
+        paper_bgcolor="#ffffff", plot_bgcolor="#ffffff", font=dict(color=TEXTO, family="Geist, Arial, sans-serif"),
         legend=dict(
             orientation="h",
             y=1.18,
@@ -620,17 +678,18 @@ def grafico_basis(df, cidade, anos, suavizar_atual, suavizar_media):
             xanchor="right",
             yanchor="top",
             bgcolor="rgba(255,255,255,0.85)",
-            bordercolor="rgba(226,232,240,0.8)",
+            bordercolor=BORDA,
             borderwidth=1,
+            font=dict(color=TEXTO),
         ),
         margin=dict(l=65, r=30, t=145, b=70),
-        xaxis=dict(title="", tickmode="array", tickvals=tickvals, ticktext=ticktext, showgrid=False, range=[1, 366]),
-        yaxis=dict(title="R$/sc", gridcolor="rgba(148, 163, 184, 0.30)", zeroline=False),
+        xaxis=dict(title="", tickmode="array", tickvals=tickvals, ticktext=ticktext, showgrid=False, range=[1, 366], color="#6b6b6b"),
+        yaxis=dict(title="R$/sc", gridcolor="rgba(34, 34, 34, 0.08)", zeroline=False, color="#6b6b6b"),
     )
 
     fig.add_annotation(
         text="AgroBasis", xref="paper", yref="paper", x=0.50, y=0.52,
-        showarrow=False, font=dict(size=82, color="rgba(15, 23, 42, 0.055)"), textangle=-18,
+        showarrow=False, font=dict(size=82, color="rgba(30, 72, 18, 0.055)", family="Geist, Arial, sans-serif"), textangle=-18,
     )
     return fig
 
@@ -654,20 +713,23 @@ def grafico_mapa(df):
         customdata=mapa[["Basis", "Preco_Fisico", "Preco_B3", "Contrato_Ref"]],
         mode="markers+text", textposition="top center",
         marker=dict(
-            size=18, color=mapa["Basis"], colorscale="RdYlGn",
-            colorbar=dict(title="Basis<br>R$/sc"), line=dict(width=1, color="#0f172a"),
+            size=18, color=mapa["Basis"],
+            colorscale=[[0.0, MARROM_ESCURO], [0.5, "#F8FAF8"], [1.0, VERDE_PRINCIPAL]],
+            colorbar=dict(title="Basis<br>R$/sc", tickfont=dict(color=TEXTO), title_font=dict(color=TEXTO)),
+            line=dict(width=1, color=TEXTO),
         ),
         hovertemplate="<b>%{text}</b><br>Basis: R$ %{customdata[0]:.2f}/sc<br>Físico: R$ %{customdata[1]:.2f}/sc<br>B3: R$ %{customdata[2]:.2f}/sc<br>Contrato: %{customdata[3]}<extra></extra>",
     ))
     fig.update_geos(
         scope="south america", projection_type="mercator", showcountries=True,
-        countrycolor="#cbd5e1", showland=True, landcolor="#f8fafc", showocean=True,
-        oceancolor="#e0f2fe", lataxis_range=[-35, 6], lonaxis_range=[-75, -32],
+        countrycolor=BORDA, showland=True, landcolor=FUNDO, showocean=True,
+        oceancolor="#eef1ee", lataxis_range=[-35, 6], lonaxis_range=[-75, -32],
     )
     fig.update_layout(
         template="plotly_white",
-        title={"text": f"Basis atual por município — {ultima_data.strftime('%d/%m/%Y')}", "x": 0.5, "xanchor": "center", "font": {"size": 18}},
+        title={"text": f"Basis atual por município — {ultima_data.strftime('%d/%m/%Y')}", "x": 0.5, "xanchor": "center", "font": {"size": 18, "color": TEXTO, "family": "Geist, Arial, sans-serif"}},
         height=650, margin=dict(l=10, r=10, t=70, b=10), paper_bgcolor="#ffffff",
+        font=dict(family="Geist, Arial, sans-serif", color=TEXTO),
     )
     return fig
 
@@ -759,15 +821,15 @@ def grafico_preco_futuro(df_basis, df_base, cidade, tipo_basis):
         marker=dict(
             color=curva["Preco_Futuro_Cidade"],
             colorscale=[
-                [0.0, "#dbeafe"],
-                [0.45, "#60a5fa"],
-                [1.0, "#14532d"],
+                [0.0, "#EEF4E7"],
+                [0.5, VERDE_SECUNDARIO],
+                [1.0, VERDE_PRINCIPAL],
             ],
-            line=dict(color="rgba(15, 23, 42, 0.18)", width=1),
+            line=dict(color="rgba(34, 34, 34, 0.15)", width=1),
         ),
         text=[f"R$ {v:.2f}" for v in curva["Preco_Futuro_Cidade"]],
         textposition="outside",
-        textfont=dict(color="#0f172a", size=12),
+        textfont=dict(color=TEXTO, size=12, family="Geist, Arial, sans-serif"),
         hovertemplate="Mês: %{x}<br>Preço teórico: R$ %{y:.2f}/sc<extra></extra>",
     ))
 
@@ -776,7 +838,7 @@ def grafico_preco_futuro(df_basis, df_base, cidade, tipo_basis):
         y=curva["Preco_Futuro_Cidade"],
         mode="lines",
         name="Tendência",
-        line=dict(color="#0f172a", width=2, shape="spline"),
+        line=dict(color=DOURADO, width=2, shape="spline"),
         hoverinfo="skip",
         showlegend=False,
     ))
@@ -786,26 +848,28 @@ def grafico_preco_futuro(df_basis, df_base, cidade, tipo_basis):
             "text": f"Preço teórico mensal do milho — {cidade}",
             "x": 0.5,
             "xanchor": "center",
-            "font": {"size": 20, "color": "#0f172a"},
+            "font": {"size": 20, "color": TEXTO, "family": "Geist, Arial, sans-serif"},
         },
-        height=650, paper_bgcolor="#ffffff", plot_bgcolor="#ffffff", font=dict(color="#0f172a"),
+        height=650, paper_bgcolor="#ffffff", plot_bgcolor="#ffffff", font=dict(color=TEXTO, family="Geist, Arial, sans-serif"),
         showlegend=False,
         bargap=0.28,
         margin=dict(l=65, r=30, t=105, b=70),
         yaxis=dict(
             title="R$/sc",
-            gridcolor="rgba(148, 163, 184, 0.25)",
+            gridcolor="rgba(34, 34, 34, 0.08)",
             zeroline=False,
+            color="#6b6b6b",
         ),
         xaxis=dict(
             title="",
             showgrid=False,
             tickfont=dict(size=12),
+            color="#6b6b6b",
         ),
     )
     fig.add_annotation(
         text="AgroBasis", xref="paper", yref="paper", x=0.50, y=0.52,
-        showarrow=False, font=dict(size=82, color="rgba(15, 23, 42, 0.055)"), textangle=-18,
+        showarrow=False, font=dict(size=82, color="rgba(30, 72, 18, 0.055)", family="Geist, Arial, sans-serif"), textangle=-18,
     )
     return fig
 
@@ -859,7 +923,7 @@ if not anos_sel:
     st.warning("Selecione pelo menos um ano.")
     st.stop()
 
-tab_basis, tab_mapa, tab_futuro = st.tabs(["📈 Basis", "🗺️ Mapa", "🌽 Preço futuro"])
+tab_basis, tab_mapa, tab_futuro = st.tabs(["Basis", "Mapa", "Preço futuro"])
 
 with tab_basis:
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
