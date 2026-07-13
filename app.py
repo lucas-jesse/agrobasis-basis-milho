@@ -656,7 +656,7 @@ def grafico_basis(df, cidade, anos, suavizar_atual, suavizar_media):
             hovertemplate="Média 5 anos<br>Dia do ano: %{x}<br>Basis: R$ %{y:.2f}/sc<extra></extra>",
         ))
 
-    cortes = [(60, "Mar / K"), (121, "Mai / N"), (182, "Jul / U"), (244, "Set / X"), (305, "Nov / F")]
+    cortes = [(1, "Mar / H"), (60, "Mai / K"), (121, "Jul / N"), (182, "Set / U"), (244, "Nov / X"), (305, "Jan / F")]
     for x, label in cortes:
         fig.add_vline(x=x, line_width=1.2, line_dash="dash", line_color="rgba(34, 34, 34, 0.35)")
         fig.add_annotation(x=x, y=1.05, yref="paper", text=label, showarrow=False, font=dict(color="#6b6b6b", size=11, family="Sora, Arial, sans-serif"))
