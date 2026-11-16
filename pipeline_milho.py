@@ -93,7 +93,7 @@ COLUNAS_CONAB = {"PRODUTO", "UF", "NOM_MUNICIPIO", "VALOR_PRODUTO_KG", "DATA_INI
 COLUNAS_HIST = ["Semana_Ini", "Semana_Fim", "Cidade", "Preco", "Coletado_Em"]
 COLUNAS_DATA = ("Data", "Semana_Ini", "Semana_Fim", "Coletado_Em")
 RE_CONTRATO = re.compile(r"^CCM[FHKNUX]\d{2}$")
-RE_DATA_BR = r"\d{2}/\d{2}/\d{4}"
+RE_DATA_BR = r"\d{2}[/-]\d{2}[/-]\d{4}"  # a Conab já usou dd/mm/aaaa e passou a usar dd-mm-aaaa (nov/2026)
 
 
 # =============================================================================
@@ -314,7 +314,7 @@ def parse_arquivo_conab(caminho: str) -> pd.DataFrame:
     df = df.dropna(subset=["Cidade"])
 
     # Semana: extrai todas as datas da string, independente do separador
-    datas = df["DATA_INICIAL_FINAL_SEMANA"].astype(str).str.findall(RE_DATA_BR)
+    datas = df["DATA_INICIAL_FINAL_SEMANA"].astype(str).str.replace("-", "/", regex=False).str.findall(RE_DATA_BR)
     df["Semana_Ini"] = pd.to_datetime(datas.str[0], format="%d/%m/%Y", errors="coerce")
     df["Semana_Fim"] = pd.to_datetime(datas.str[-1], format="%d/%m/%Y", errors="coerce")
     if df["Semana_Fim"].isna().all():
