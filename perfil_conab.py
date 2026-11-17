@@ -1,8 +1,18 @@
 import io, requests, pandas as pd, re
 URL="https://portaldeinformacoes.conab.gov.br/downloads/arquivos/PrecosSemanalMunicipio.txt"
+import sys
+for alt in ["PrecosMensalMunicipio.txt"]:
+    try:
+        rr=requests.get(URL.replace("PrecosSemanalMunicipio.txt",alt),timeout=600,headers={"User-Agent":"Mozilla/5.0 AgroBasis"})
+        print("ALT",alt,rr.status_code,len(rr.content)/1e6)
+        if rr.ok:
+            m=pd.read_csv(io.BytesIO(rr.content),sep=";",dtype=str,encoding="latin-1",on_bad_lines="skip")
+            print(m.columns.tolist()); print(m.head(2).to_string())
+            mm=m[m.iloc[:,0].astype(str).str.upper().str.contains("SOJA|MILHO",na=False) | m.apply(lambda c: c.astype(str).str.upper().str.contains("SOJA").any())]
+    except Exception as e: print("ALT erro",e)
 r=requests.get(URL,timeout=600,headers={"User-Agent":"Mozilla/5.0 AgroBasis"}); r.raise_for_status()
 print("MB",len(r.content)/1e6)
-df=pd.read_csv(io.BytesIO(r.content),sep=";",dtype=str,encoding="latin-1" if b"\xe7" in r.content[:200000] and not r.content[:200000].decode("utf-8","ignore") else "utf-8",on_bad_lines="skip")
+df=pd.read_csv(io.BytesIO(r.content),sep=";",dtype=str,encoding="latin-1",on_bad_lines="skip")
 print(df.columns.tolist()); print(df.head(3).to_string())
 p=df["PRODUTO"].str.upper()
 for col in df.columns:
