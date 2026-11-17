@@ -1,32 +1,32 @@
-import io, requests, pandas as pd, re
-URL="https://portaldeinformacoes.conab.gov.br/downloads/arquivos/PrecosSemanalMunicipio.txt"
-import sys
-for alt in ["PrecosMensalMunicipio.txt"]:
-    try:
-        rr=requests.get(URL.replace("PrecosSemanalMunicipio.txt",alt),timeout=600,headers={"User-Agent":"Mozilla/5.0 AgroBasis"})
-        print("ALT",alt,rr.status_code,len(rr.content)/1e6)
-        if rr.ok:
-            m=pd.read_csv(io.BytesIO(rr.content),sep=";",dtype=str,encoding="latin-1",on_bad_lines="skip")
-            print(m.columns.tolist()); print(m.head(2).to_string())
-            mm=m[m.iloc[:,0].astype(str).str.upper().str.contains("SOJA|MILHO",na=False) | m.apply(lambda c: c.astype(str).str.upper().str.contains("SOJA").any())]
-    except Exception as e: print("ALT erro",e)
-r=requests.get(URL,timeout=600,headers={"User-Agent":"Mozilla/5.0 AgroBasis"}); r.raise_for_status()
-print("MB",len(r.content)/1e6)
-df=pd.read_csv(io.BytesIO(r.content),sep=";",dtype=str,encoding="latin-1",on_bad_lines="skip")
-print(df.columns.tolist()); print(df.head(3).to_string())
-p=df["PRODUTO"].str.upper()
-for col in df.columns:
-    if df[col].nunique()<40: print(col, df[col].value_counts().head(15).to_dict())
-d=df[p.str.contains("SOJA|MILHO",na=False)].copy()
-d["dt"]=pd.to_datetime(d["DATA_INICIAL_FINAL_SEMANA"].str.replace("-","/").str.findall(r"\d{2}/\d{2}/\d{4}").str[-1],dayfirst=True,errors="coerce")
-nivel=[c for c in d.columns if "NIVEL" in c.upper() or "COMERC" in c.upper()]
-grp=["PRODUTO"]+nivel
-print(d.groupby(grp).agg(linhas=("dt","size"),ini=("dt","min"),fim=("dt","max"),munis=("NOM_MUNICIPIO","nunique")).to_string())
-d["ano"]=d.dt.dt.year
-print(d.groupby(grp+["ano"]).NOM_MUNICIPIO.nunique().unstack(0 if not nivel else list(range(len(grp)))).tail(12).to_string())
-rec=d[d.dt>=pd.Timestamp("2025-11-01")]
-print(rec.groupby(grp+["UF"]).NOM_MUNICIPIO.nunique().to_string())
-for prod in ["SOJA","MILHO"]:
-    x=rec[rec.PRODUTO.str.upper().str.contains(prod)]
-    print(prod, "semanas por município (últimos 12m):", x.groupby(["UF","NOM_MUNICIPIO"]).dt.nunique().describe().to_dict())
-    print(x.groupby(["UF","NOM_MUNICIPIO"]).dt.nunique().sort_values(ascending=False).head(40).to_string())
+import io, requests, pandas as pd
+B="https://portaldeinformacoes.conab.gov.br/downloads/arquivos/"
+def ler(n):
+    r=requests.get(B+n,timeout=600,headers={"User-Agent":"Mozilla/5.0 AgroBasis"}); r.raise_for_status()
+    d=pd.read_csv(io.BytesIO(r.content),sep=";",dtype=str,encoding="latin-1",on_bad_lines="skip")
+    d.columns=[c.strip().lower() for c in d.columns]
+    for c in d.columns: d[c]=d[c].str.strip()
+    return d
+pd.set_option("display.width",250)
+for nome,sem in [("PrecosSemanalMunicipio.txt",True),("PrecosMensalMunicipio.txt",False)]:
+    d=ler(nome); print("=====",nome,len(d))
+    print("niveis:",d.dsc_nivel_comercializacao.value_counts().to_dict())
+    print("anos:",d.ano.min(),d.ano.max())
+    p=d.produto.str.upper()
+    x=d[p.str.match(r"^(SOJA|MILHO)\b",na=False)].copy()
+    print(x.groupby(["produto","classificao_produto","dsc_nivel_comercializacao"]).size().to_string())
+    x["per"]=x.ano.astype(int)*100+x.mes.astype(int)
+    pp=x[x.dsc_nivel_comercializacao.str.contains("PRODUTOR",na=False)]
+    print("munic. preço produtor por ano e produto:")
+    print(pp.assign(pr=pp.produto.str.split().str[0]).groupby(["ano","pr"]).nom_municipio.nunique().unstack().to_string())
+    rec=pp[pp.per>=202511]
+    print("últimos 12m, municípios por UF:")
+    print(rec.assign(pr=rec.produto.str.split().str[0]).groupby(["uf","pr"]).nom_municipio.nunique().unstack().to_string())
+    if sem:
+        rec=rec.assign(pr=rec.produto.str.split().str[0])
+        k=rec.groupby(["pr","uf","nom_municipio"]).data_inicial_final_semana.nunique()
+        print(k.groupby(level=0).describe().to_string())
+        print(k.sort_values(ascending=False).groupby(level=0).head(30).to_string())
+    else:
+        k=pp.assign(pr=pp.produto.str.split().str[0]).groupby(["pr","uf","nom_municipio"]).agg(ini=("per","min"),fim=("per","max"),n=("per","nunique"))
+        print(k[k.n>=120].groupby(level=0).size().to_string(), "municípios com 10+ anos de meses")
+        print(k.sort_values("n",ascending=False).groupby(level=0).head(25).to_string())
